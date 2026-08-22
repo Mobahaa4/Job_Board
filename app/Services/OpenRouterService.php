@@ -13,6 +13,12 @@ class OpenRouterService
 
     private string $baseUrl;
 
+    private array $fallbackModels = [
+        'nvidia/nemotron-3-super-120b-a12b:free',
+        'nvidia/nemotron-3-nano-30b-a3b:free',
+        'nvidia/nemotron-nano-9b-v2:free',
+    ];
+
     public function __construct()
     {
         $this->apiKey = (string) config('services.openrouter.api_key');
@@ -20,44 +26,73 @@ class OpenRouterService
         $this->baseUrl = rtrim((string) config('services.openrouter.base_url'), '/');
     }
 
-    public function chat(array $messages, int $maxTokens = 500): string
+    public function chat(array $messages, int $maxTokens = 1500): string
     {
+        $models = array_merge([$this->model], $this->fallbackModels);
         $lastError = null;
 
-        for ($attempt = 1; $attempt <= 2; $attempt++) {
-            $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $this->apiKey,
-                'Content-Type' => 'application/json',
-                'HTTP-Referer' => (string) config('app.url'),
-                'X-Title' => (string) config('app.name', 'AI Job Board'),
-            ])
-                ->withOptions($this->httpOptions())
-                ->timeout(30)
-                ->retry(0)
-                ->post($this->baseUrl . '/chat/completions', [
-                    'model' => $this->model,
-                    'messages' => $messages,
-                    'max_tokens' => $maxTokens,
-                    'temperature' => 0.4,
-                    'route' => 'fallback',
-                ]);
+        foreach ($models as $modelIndex => $currentModel) {
+            $attempts = $modelIndex === 0 ? 2 : 1;
 
-            if ($response->successful()) {
-                $content = data_get($response->json(), 'choices.0.message.content');
+            for ($attempt = 1; $attempt <= $attempts; $attempt++) {
+                try {
+                    $response = Http::withHeaders([
+                        'Authorization' => 'Bearer ' . $this->apiKey,
+                        'Content-Type' => 'application/json',
+                        'HTTP-Referer' => (string) config('app.url'),
+                        'X-Title' => (string) config('app.name', 'AI Job Board'),
+                    ])
+                        ->withOptions($this->httpOptions())
+                        ->timeout(20)
+                        ->retry(0)
+                        ->post($this->baseUrl . '/chat/completions', [
+                            'model' => $currentModel,
+                            'messages' => $messages,
+                            'max_tokens' => $maxTokens,
+                            'temperature' => 0.4,
+                            'route' => 'fallback',
+                        ]);
 
-                if (is_string($content) && trim($content) !== '') {
-                    return trim($content);
+                    if ($response->successful()) {
+                        $content = data_get($response->json(), 'choices.0.message.content');
+
+                        if (is_string($content) && trim($content) !== '') {
+                            return trim($content);
+                        }
+                    }
+
+                    $status = $response->status();
+                    $lastError = "OpenRouter ({$currentModel}) failed ({$status})";
+
+                    Log::warning("Chatbot API: {$lastError}", [
+                        'model' => $currentModel,
+                        'attempt' => $attempt,
+                        'response' => $response->body(),
+                    ]);
+
+                    if ($status === 429 && $attempt < $attempts) {
+                        usleep(1000000);
+                    }
+                } catch (\Throwable $e) {
+                    $lastError = "Chatbot API exception: {$e->getMessage()}";
+                    Log::warning('Chatbot API exception', [
+                        'model' => $currentModel,
+                        'attempt' => $attempt,
+                        'error' => $e->getMessage(),
+                    ]);
+
+                    if ($attempt < $attempts) {
+                        usleep(1000000);
+                    }
                 }
             }
 
-            $lastError = 'OpenRouter request failed (' . $response->status() . '): ' . $response->body();
-
-            if ($attempt < 2 && $response->status() === 429) {
-                usleep(500000);
+            if ($modelIndex < count($models) - 1) {
+                Log::info("Chatbot API: trying fallback model: {$this->fallbackModels[$modelIndex]}");
             }
         }
 
-        throw new \RuntimeException($lastError);
+        throw new \RuntimeException($lastError ?? 'All AI models failed');
     }
 
     private function httpOptions(): array
@@ -71,13 +106,13 @@ class OpenRouterService
             return ['verify' => $caBundle];
         }
 
-        Log::warning('No CA certificate bundle found on this machine, SSL verification disabled for OpenRouter.');
+        Log::warning('No CA certificate bundle found, SSL verification disabled for OpenRouter.');
 
         return ['verify' => false];
     }
 
     private function findCaBundle(): ?string
-    {
+    { 
         $candidates = array_filter([
             config('services.openrouter.ca_bundle'),
             ini_get('curl.cainfo') ?: null,

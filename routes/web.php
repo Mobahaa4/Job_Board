@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\CandidateController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\JobController as AdminJobController;
 use App\Http\Controllers\ApplicationController;
+use App\Http\Controllers\ApplicationCvController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ChatbotController;
 use App\Http\Controllers\DashboardController;
@@ -40,6 +41,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/resume/{user}/download', [ResumeController::class, 'download'])->name('resume.download');
 
     Route::get('/applications', [ApplicationController::class, 'index'])->name('applications.index');
+    Route::get('/applications/{application}/cv/view', [ApplicationCvController::class, 'show'])->name('applications.cv.show');
+    Route::get('/applications/{application}/cv/download', [ApplicationCvController::class, 'download'])->name('applications.cv.download');
     Route::post('/jobs/{job}/apply', [ApplicationController::class, 'store'])->name('applications.store');
     Route::delete('/jobs/{job}/apply', [ApplicationController::class, 'destroy'])->name('applications.destroy');
 

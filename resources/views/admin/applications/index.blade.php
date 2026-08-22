@@ -32,6 +32,7 @@
                             <th>Job</th>
                             <th>Applied On</th>
                             <th>Cover Letter</th>
+                            <th>CV</th>
                             <th>Status</th>
                             <th class="text-end">Actions</th>
                         </tr>
@@ -60,6 +61,16 @@
                                 <td>
                                     @if ($application->cover_letter)
                                         <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#coverModal{{ $application->id }}">View</button>
+                                    @else
+                                        <span class="text-muted">—</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    @if ($application->cv_path)
+                                        <div class="d-flex gap-1">
+                                            <a href="{{ route('applications.cv.show', $application) }}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye me-1"></i>View CV</a>
+                                            <a href="{{ route('applications.cv.download', $application) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-download"></i></a>
+                                        </div>
                                     @else
                                         <span class="text-muted">—</span>
                                     @endif

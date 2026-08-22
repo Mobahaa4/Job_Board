@@ -46,6 +46,9 @@
                             </div>
                             <div class="d-flex gap-2">
                                 <a href="{{ route('jobs.show', $application->job) }}" class="btn btn-sm btn-outline-primary flex-grow-1"><i class="bi bi-eye me-1"></i>View</a>
+                                @if ($application->cv_path)
+                                    <a href="{{ route('applications.cv.show', $application) }}" target="_blank" class="btn btn-sm btn-outline-secondary" title="View CV"><i class="bi bi-file-earmark-pdf me-1"></i>CV</a>
+                                @endif
                                 <form method="POST" action="{{ route('applications.destroy', $application->job) }}" data-confirm="Are you sure you want to cancel this application? Your seat will be released." data-confirm-title="Cancel application?">
                                     @csrf
                                     @method('DELETE')

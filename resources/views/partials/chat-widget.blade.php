@@ -26,9 +26,21 @@
                     <div class="chat-bubble bot">{{ $msg->response }}</div>
                 @endforeach
             @else
-                <div class="chat-bubble bot">
-                    Hi! I'm Jobot, your AI job assistant. I can recommend jobs based on your skills, list available openings, show jobs by category or location, and answer questions about the platform's data. What can I help you with?
-                </div>
+                @auth
+                    @if (auth()->user()->isAdmin())
+                        <div class="chat-bubble bot">
+                            Hi! I'm Jobot, your admin assistant. I can show you all candidates, all applications, platform statistics, and help you manage job listings. What would you like to know?
+                        </div>
+                    @else
+                        <div class="chat-bubble bot">
+                            Hi! I'm Jobot, your job assistant. I can recommend jobs based on your skills, show you available openings, and help you manage your applications. What can I help you with?
+                        </div>
+                    @endif
+                @else
+                    <div class="chat-bubble bot">
+                        Hi! I'm Jobot, your AI job assistant. I can show you available jobs, filter by category or location, and answer questions about the platform's data. What can I help you with?
+                    </div>
+                @endauth
             @endif
         </div>
 
@@ -36,14 +48,15 @@
             @auth
                 @if (auth()->user()->isAdmin())
                     <button type="button" class="chip">How many candidates are registered?</button>
-                    <button type="button" class="chip">How many applications are there?</button>
+                    <button type="button" class="chip">Show all applications</button>
                     <button type="button" class="chip">List all available jobs</button>
-                    <button type="button" class="chip">How many open IT jobs?</button>
+                    <button type="button" class="chip">How do I add a new job?</button>
+                    <button type="button" class="chip">How do I delete a job?</button>
                 @else
                     <button type="button" class="chip">What are the best jobs for me?</button>
-                    <button type="button" class="chip">Which jobs match my skills?</button>
                     <button type="button" class="chip">Show me remote jobs</button>
                     <button type="button" class="chip">How many jobs are open?</button>
+                    <button type="button" class="chip">Edit my profile</button>
                 @endif
             @endauth
             @guest

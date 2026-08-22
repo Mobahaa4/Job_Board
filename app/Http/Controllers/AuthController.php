@@ -22,13 +22,18 @@ class AuthController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'role' => ['nullable', Rule::in(['admin', 'candidate'])],
             'age' => ['nullable', 'integer', 'min:16', 'max:99'],
-            'job_title' => ['nullable', 'string', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:50'],
-            'skills' => ['nullable', 'string'],
+            'job_title' => ['required_unless:role,admin', 'string', 'max:255'],
+            'phone' => ['required', 'string', 'max:50'],
+            'skills' => ['required_unless:role,admin', 'string'],
         ]);
 
-        $data['role'] = 'candidate';
+        $data['role'] = $data['role'] ?? 'candidate';
+
+        if ($data['role'] === 'admin') {
+            $data = array_intersect_key($data, array_flip(['name', 'email', 'password', 'role']));
+        }
 
         $user = User::create($data);
 

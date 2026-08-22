@@ -69,16 +69,27 @@
                             @elseif ($application)
                                 <div class="alert alert-success mb-0 d-flex justify-content-between align-items-center flex-wrap gap-2">
                                     <span><i class="bi bi-check-circle-fill me-1"></i>You applied on {{ $application->created_at->format('d M Y') }}.</span>
-                                    <form method="POST" action="{{ route('applications.destroy', $job) }}" data-confirm="Cancel your application for this job?" data-confirm-title="Cancel application?">
+                                    <span class="d-flex align-items-center gap-2">
+                                        @if ($application->cv_path)
+                                            <a href="{{ route('applications.cv.show', $application) }}" target="_blank" class="btn btn-sm btn-outline-success"><i class="bi bi-file-earmark-pdf me-1"></i>View CV</a>
+                                        @endif
+                                        <form method="POST" action="{{ route('applications.destroy', $job) }}" data-confirm="Cancel your application for this job?" data-confirm-title="Cancel application?">
                                         @csrf
                                         @method('DELETE')
                                         <button class="btn btn-outline-danger btn-sm"><i class="bi bi-x-circle me-1"></i>Cancel Application</button>
-                                    </form>
+                                        </form>
+                                    </span>
                                 </div>
                             @else
                                 <h5 class="fw-bold mb-3">Apply for this job</h5>
-                                <form method="POST" action="{{ route('applications.store', $job) }}">
+                                <form method="POST" action="{{ route('applications.store', $job) }}" enctype="multipart/form-data">
                                     @csrf
+                                    <div class="mb-3">
+                                        <label for="cv" class="form-label fw-medium">CV / Resume <span class="text-danger">*</span></label>
+                                        <input type="file" class="form-control @error('cv') is-invalid @enderror" id="cv" name="cv" accept=".pdf,.doc,.docx" required>
+                                        <div class="form-text">Allowed formats: PDF, DOC, DOCX (max 2MB). The employer will be able to view your CV.</div>
+                                        @error('cv') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                    </div>
                                     <div class="mb-3">
                                         <label for="cover_letter" class="form-label fw-medium">Cover Letter (optional)</label>
                                         <textarea class="form-control" id="cover_letter" name="cover_letter" rows="3" placeholder="Tell the employer why you're a good fit..."></textarea>

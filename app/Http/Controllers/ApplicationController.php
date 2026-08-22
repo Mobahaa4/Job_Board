@@ -7,6 +7,7 @@ use App\Models\Job;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class ApplicationController extends Controller
@@ -35,12 +36,14 @@ class ApplicationController extends Controller
 
         $data = $request->validate([
             'cover_letter' => ['nullable', 'string', 'max:5000'],
+            'cv' => ['required', 'file', 'mimes:pdf,doc,docx', 'max:2048'],
         ]);
 
         Application::create([
             'user_id' => $user->id,
             'job_listing_id' => $job->id,
             'cover_letter' => $data['cover_letter'] ?? null,
+            'cv_path' => $request->file('cv')->store('applications/cvs', 'public'),
         ]);
 
         return back()->with('success', 'Application submitted successfully. Good luck!');
@@ -52,6 +55,10 @@ class ApplicationController extends Controller
 
         if (! $application) {
             return back()->with('error', 'Application not found.');
+        }
+
+        if ($application->cv_path) {
+            Storage::disk('public')->delete($application->cv_path);
         }
 
         $application->delete();

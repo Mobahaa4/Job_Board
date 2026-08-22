@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'job_listing_id',
     'status',
     'cover_letter',
+    'cv_path',
 ])]
 class Application extends Model
 {
